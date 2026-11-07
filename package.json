@@ -1,0 +1,1 @@
+{"name":"re-rpg","private":true,"type":"module","version":"0.3.0","scripts":{"test":"node --test","build":"node build.mjs"},"engines":{"node":">=22"}}
