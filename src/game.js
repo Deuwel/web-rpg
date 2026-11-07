@@ -120,7 +120,7 @@ export function playerAction(s,events){
   for(const enemy of id==='sweep'?alive:[target]){
     const critical=random(s)*100<t.crit,amount=damage(t.attack,enemy.defense,skill?.power||1,critical);
     enemy.hp=Math.max(0,enemy.hp-amount);
-    events.push({type:'hit',id:enemy.id,amount,critical});
+    events.push({type:'hit',source:'player',id:enemy.id,skill:skill?.name,amount,critical});
     if(enemy.hp===0)reward(s,enemy,events);
   }
   if(!target.hp)c.target=c.enemies.find(e=>e.hp>0)?.id||null;
@@ -168,7 +168,7 @@ export function tick(s){
     if(enemy.hp===0||enemy.gauge+1e-8<100)continue;
     enemy.gauge=Math.max(0,enemy.gauge-100);enemy.turn++;
     const heavy=enemy.boss&&enemy.turn%3===0,amount=damage(enemy.attack,summary(s).total.defense,heavy?2:1);
-    c.hp=Math.max(0,c.hp-amount);events.push({type:'hit',id:'player',amount,critical:heavy});
+    c.hp=Math.max(0,c.hp-amount);events.push({type:'hit',source:enemy.id,id:'player',amount,critical:heavy});
     if(heavy)log(s,'감시자의 붕괴 강타','danger');
     if(!c.hp){
       c.active=false;c.reserved=null;c.buffs={};log(s,'패배 | 획득한 보상은 유지됩니다.','danger');events.push({type:'death'});return events;

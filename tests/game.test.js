@@ -20,3 +20,16 @@ test('valid backup recovers corrupt primary; restored battle is paused',()=>{con
 test('invalid imports reject impossible points and duplicate item ownership',()=>{const s=g.createGame();assert.throws(()=>validate({...s,points:2}));assert.throws(()=>validate({...s,inventory:[s.equipment.weapon]}));assert.throws(()=>validate({...s,currency:{...s.currency,gold:'-1'}}));});
 test('currency keeps exact integer units beyond 1e308',()=>{const s=g.createGame();s.currency.gold='1'+'0'.repeat(309);g.add(s,'gold',1);assert.equal(parse(JSON.stringify(s)).currency.gold,'1'+'0'.repeat(308)+'1');});
 test('tactic editor bounds thresholds',()=>{const s=g.createGame();g.editRule(s,1,{condition:'enemiesGte',value:40,priority:-2});assert.equal(s.tactics[1].value,3);assert.equal(s.tactics[1].priority,1);});
+
+test('simultaneous hits identify each attacker, recipient and player skill for the HUD', () => {
+  const state = trained();
+  const combat = state.combat;
+  combat.enemies = [{...combat.enemies[0], hp: 10000, maxHp: 10000, gauge: 100}];
+  combat.gauge = 100;
+  combat.reserved = 'cleave';
+  const enemyId = combat.enemies[0].id;
+  const hits = g.tick(state).filter(event => event.type === 'hit');
+  assert.deepEqual(hits.map(hit => [hit.source, hit.id]), [['player', enemyId], [enemyId, 'player']]);
+  assert.equal(hits[0].skill, '가르기');
+  assert.ok(hits.every(hit => hit.amount > 0));
+});

@@ -1,3 +1,5 @@
+import { itemTile, itemCard } from './equipment-view.js';
+import { showHits } from './combat-effects.js';
 import * as game from './game.js';
 import { RULES, STATS, LABELS, ITEMS, SLOT_NAMES, SKILLS, CONDITIONS, POTIONS, DEPTHS } from './data.js';
 import { KEY, load, parse, save } from './storage.js';
@@ -12,11 +14,11 @@ const option = (v,n,selected) => '<option value="'+escape(v)+'"'+(selected===v?'
 const action = (id,value,label,disabled=false) => '<button data-cmd="'+id+'" data-value="'+escape(value)+'"'+(disabled?' disabled':'')+'>'+escape(label)+'</button>';
 const row = (title,detail,control='') => '<div class="row"><div><b>'+escape(title)+'</b><small>'+escape(detail)+'</small></div>'+control+'</div>';
 const names = {gold:'골드',stone:'강화석',chaos:'혼돈 파편'};
-const icons = {weapon:'†',armor:'⬡',necklace:'◇'};
+let category='';
 let s=game.createGame(), writable=false, persistent=true, damaged=false, tab='bag', view='', subject='', pending=null;
 let lastEnemies='', lastLog=-1, selectedDepth=0, toastTimer, lockRelease;
 function notice(message){txt('notice',message);$('notice').hidden=!message;}
-function toast(message){txt('toast',message);clearTimeout(toastTimer);toastTimer=setTimeout(()=>txt('toast',''),2400);}
+function toast(message){const id=$('dialog').open?'dialog-feedback':'toast';txt(id,message);clearTimeout(toastTimer);toastTimer=setTimeout(()=>{txt('toast','');txt('dialog-feedback','');},2400);}
 function retrieve(){
   try{
     const result=load(localStorage);
@@ -76,14 +78,22 @@ function renderLive(){
   }
 }
 function renderBag(){
-  const gear=tab==='gear',filter=$('filter').value;
-  $('bag-tab').setAttribute('aria-selected',!gear);$('gear-tab').setAttribute('aria-selected',gear);
-  txt('bag-count',s.inventory.length+' / '+RULES.capacity);
-  const arr=(gear?Object.values(s.equipment).filter(Boolean):[...s.inventory].reverse()).filter(i=>!filter||ITEMS[i.template].slot===filter);
-  if($('sort').value==='rarity')arr.sort((a,b)=>b.rarity-a.rarity);
-  if($('sort').value==='level')arr.sort((a,b)=>b.level-a.level);
-  $('overflow').hidden=!s.overflow.length;txt('overflow','임시 획득함 '+s.overflow.length+'개 | 가방에 자리가 생기면 자동 수령');
-  $('items').innerHTML=arr.map(i=>'<button class="item grade'+i.rarity+'" data-item="'+i.id+'"><i>'+icons[ITEMS[i.template].slot]+'</i><span>'+game.itemName(i)+'<small>'+ITEMS[i.template].type+' | Lv.'+i.level+'</small></span><span>'+(i.protected?'잠금':'상세 →')+'</span></button>').join('')||'<div class="empty"><b>◇</b>'+(gear?'해당하는 장착 장비가 없습니다.':'획득한 장비가 여기에 표시됩니다.')+'</div>';
+  const gear=tab==='gear';
+  $('bag-tab').setAttribute('aria-pressed',!gear);$('gear-tab').setAttribute('aria-pressed',gear);
+  for(const button of document.querySelectorAll('[data-category]'))button.setAttribute('aria-pressed',button.dataset.category===category);
+  txt('bag-count',s.inventory.length+' / '+RULES.capacity+'칸');
+  const items=(gear?Object.values(s.equipment).filter(Boolean):[...s.inventory].reverse()).filter(i=>!category||ITEMS[i.template].slot===category);
+  if($('sort').value==='rarity')items.sort((a,b)=>b.rarity-a.rarity);
+  if($('sort').value==='level')items.sort((a,b)=>b.level-a.level);
+  $('overflow').hidden=!s.overflow.length;txt('overflow','임시 획득함 '+s.overflow.length+'개 | 공간 확보 시 자동 수령');
+  txt('item-status',(category?SLOT_NAMES[category]:'전체')+' | '+items.length+'개'+(!items.length?' | 표시할 장비가 없습니다.':''));
+  let slots=items.map(i=>itemTile(i,gear)).join('');
+  if(gear){
+    for(const [key,item] of Object.entries(s.equipment))if(!item&&(!category||category===key))slots+='<div class="empty-slot">'+SLOT_NAMES[key]+' 미장착</div>';
+  }else if(!category){
+    slots+='<div class="empty-slot" aria-hidden="true">◇</div>'.repeat(Math.max(0,RULES.capacity-items.length));
+  }
+  $('items').innerHTML=slots;
 }
 function render(){
   const c=s.combat,{total}=game.summary(s);
@@ -97,26 +107,15 @@ function render(){
   $('depth').disabled=c.active;
   const wins=s.progress.wins[selectedDepth];txt('progress',Math.min(wins,10)+' / 10승');meter($('progress-bar'),wins,10);
   txt('boss-count','누적 '+wins+'승 | 감시자 격파 '+s.progress.bosses[selectedDepth]+'회');$('boss').disabled=c.active||wins<10;$('start').disabled=c.active;
-  $('rule-list').innerHTML=s.tactics.map((r,i)=>'<button class="rule" data-rule="'+i+'"><span class="spread"><span class="priority">P'+String(r.priority).padStart(2,'0')+'</span><span class="rule-state">'+(s.learned.includes(r.skill)?'등록됨':'미습득')+'</span></span><b>'+SKILLS[r.skill].name+'</b><small>'+condition(r)+'　↗</small></button>').join('');
+  $('rule-list').innerHTML=s.tactics.map((r,i)=>'<button class="rule" data-rule="'+i+'"><span class="priority">'+String(r.priority).padStart(2,'0')+'</span><span><small>슬롯 '+(i+1)+' | '+(s.learned.includes(r.skill)?'습득':'미습득')+'</small><b>'+SKILLS[r.skill].name+'</b><em>'+condition(r)+'</em></span><span class="edit">편집 ↗</span></button>').join('');
   $('reservations').innerHTML=Object.keys(SKILLS).filter(k=>!SKILLS[k].passive).map(id=>'<button data-reserve="'+id+'">'+SKILLS[id].name.replace('전투의 ','')+'</button>').join('');
   $('potions').innerHTML=s.potionSlots.map((k,i)=>'<button data-potion="'+i+'" aria-label="'+(POTIONS[k]?.name||'빈 포션 슬롯')+'">'+(k?k.toUpperCase():'—')+'<small></small></button>').join('');
   renderBag();renderLive();
 }
-function drawHits(events){
-  if(s.settings.reducedMotion)return;
-  const arena=$('arena').getBoundingClientRect();
-  for(const e of events.filter(e=>e.type==='hit')){
-    const actor=e.id==='player'?$('player'):document.querySelector('[data-target="'+e.id+'"]');
-    if(!actor)continue;
-    const box=actor.getBoundingClientRect(),hit=document.createElement('i');hit.className='hit'+(e.critical?' critical':'');hit.textContent='−'+e.amount;
-    hit.style.left=(box.left-arena.left+box.width/2)+'px';hit.style.top=(box.top-arena.top+box.height/2)+'px';
-    $('effects').append(hit);setTimeout(()=>hit.remove(),760);
-  }
-}
 function findItem(id){return [...s.inventory,...Object.values(s.equipment)].find(i=>i?.id===id);}
 function modal(which,arg=''){
   if(s.combat.active&&!s.combat.paused&&writable){s.combat.paused=true;persist();renderLive();}
-  view=which;subject=arg;
+  view=which;subject=arg;txt('dialog-feedback','');
   const content=modalContent();
   txt('dialog-title',content[0]);$('dialog-body').innerHTML=content[1];
   if(!$('dialog').open)$('dialog').showModal();
@@ -136,9 +135,7 @@ function modalContent(){
   }
   if(view==='item'){
     const i=findItem(subject);if(!i)return ['장비 상세','처리한 장비입니다.'];
-    const kind=ITEMS[i.template],equipped=s.equipment[kind.slot]?.id===i.id;
-    const current=game.summary(s).total,next=game.summary(s,{...s.equipment,[kind.slot]:equipped?null:i}).total;
-    return [game.itemName(i),'<p>'+kind.type+' | 착용 Lv.'+i.level+' | 품질 '+i.quality+'% | +'+i.enhancement+'</p>'+Object.entries(game.itemStats(i)).map(([k,n])=>row(LABELS[k],num(n))).join('')+'<h3>'+(equipped?'해제':'교체')+' 후 비교</h3>'+Object.keys(current).filter(k=>current[k]!==next[k]).map(k=>row(LABELS[k],num(current[k])+' → '+num(next[k]))).join('')+'<div class="actions">'+(equipped?action('unequip',kind.slot,'해제',!town):action('equip',i.id,'장착',!town||s.level<i.level))+action('lock',i.id,i.protected?'잠금 해제':'잠금')+(equipped?'':action('sell',i.id,'판매 | '+game.price(i)+' 골드',i.protected))+'</div>'];
+    return ['장비 상세',itemCard(s,i,action)];
   }
   if(view==='settings'){
     return ['설정','<label>플레이어 닉네임<input id="nickname" type="text" maxlength="20" value="'+escape(s.nickname)+'"></label><div class="actions">'+action('nickname','','닉네임 적용')+'</div>'+row('큰 수 축약','기본값 OFF','<input type="checkbox" data-setting="abbreviate" aria-label="큰 수 축약" '+(s.settings.abbreviate?'checked':'')+'>')+row('전투 효과 줄이기','','<input type="checkbox" data-setting="reducedMotion" aria-label="전투 효과 줄이기" '+(s.settings.reducedMotion?'checked':'')+'>')+'<h3>포션 등록</h3><div class="formgrid">'+s.potionSlots.map((k,i)=>'<label>슬롯 '+(i+1)+'<select data-slot="'+i+'">'+option('','미등록',k||'')+Object.entries(POTIONS).map(([id,p])=>option(id,p.name,k)).join('')+'</select></label>').join('')+'</div>'+Object.entries(POTIONS).map(([k,p])=>row(p.name+' ×'+s.potions[k],Math.round(p.fraction*100)+'% 회복 | 쿨타임 '+p.cd+'초',action('buy',k,p.price+' 골드 구입',!town||BigInt(s.currency.gold)<p.price))).join('')+'<div class="actions">'+action('export','','저장 파일 받기')+action('import','','저장 파일 불러오기')+action('help','','도움말')+'</div><input type="file" id="file" accept=".json,application/json" hidden>'];
@@ -190,6 +187,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b||b.disabled)return;
   const d=b.dataset;
   if(b.id==='close'){pending=null;return $('dialog').close();}
+  if(d.category!==undefined){category=d.category;return renderBag();}
   if(d.open)return modal(d.open);
   if(d.money)return modal('money',d.money);
   if(d.item)return modal('item',d.item);
@@ -203,7 +201,11 @@ document.addEventListener('click',e=>{
   if(d.reserve){s.combat.reserved=s.combat.reserved===d.reserve?null:d.reserve;return finish();}
   if(d.potion!==undefined)return finish(game.usePotion(s,Number(d.potion)));
   switch(b.id){
-    case 'start':case 'quick-start':case 'boss':return finish(game.enter(s,selectedDepth,b.id==='boss'));
+    case 'start':case 'quick-start':case 'boss':{
+      const error=game.enter(s,selectedDepth,b.id==='boss');
+      if(!error){$('effects').replaceChildren();txt('hit-dealt','—');txt('hit-taken','—');}
+      return finish(error);
+    }
     case 'pause':
       if(s.combat.paused&&s.overflow.length)return toast('가방 장비를 판매하거나 마을로 귀환하세요.');
       s.combat.paused=!s.combat.paused;return finish();
@@ -213,7 +215,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',async e=>{
   const el=e.target;
   if(el.id==='depth'){selectedDepth=Number(el.value);return render();}
-  if(['filter','sort'].includes(el.id))return renderBag();
+  if(el.id==='sort')return renderBag();
   if(!writable)return;
   if(el.id==='file'){
     const file=el.files[0];if(!file)return;
@@ -231,8 +233,19 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)suspend();}
 window.addEventListener('pagehide',()=>{suspend();lockRelease?.();});
 window.addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
 window.addEventListener('storage',e=>{if(!writable&&e.key===KEY){retrieve();lastEnemies='!';lastLog=-1;render();}});
+function navigate(focus=false){
+  const page=['tactics','inventory'].includes(location.hash.slice(1))?location.hash.slice(1):'battle';
+  if(page!=='battle')suspend();
+  for(const section of document.querySelectorAll('main .page'))section.hidden=section.id!==page+'-page';
+  for(const link of document.querySelectorAll('nav a')){
+    if(link.hash==='#'+page)link.setAttribute('aria-current','page');
+    else link.removeAttribute('aria-current');
+  }
+  if(focus){window.scrollTo(0,0);$(page+'-page').querySelector('h1').focus({preventScroll:true});}
+}
+window.addEventListener('hashchange',()=>navigate(true));
 function init(writer){
-  writable=writer;retrieve();render();
+  writable=writer;retrieve();render();navigate();
   if(!writer)notice('다른 탭에서 진행 중입니다. 이 탭에서 플레이하려면 다른 탭을 닫고 새로고침하세요.');
 }
 if(navigator.locks){
@@ -248,8 +261,11 @@ setInterval(()=>{
   accumulated+=delta;
   const events=[];
   while(accumulated>=RULES.step){events.push(...game.tick(s));accumulated-=RULES.step;}
+  for(const e of events){
+    if(e.type==='hit')txt(e.id==='player'?'hit-taken':'hit-dealt',e.amount+(e.critical?(e.id==='player'?' 강타':' 치명타'):''));
+  }
+  showHits(events,$('arena'),$('player'),$('effects'),s.settings.reducedMotion);
   const reward=events.some(e=>e.type!=='hit');
   if(reward){render();}else if(now-lastPaint>=95){renderLive();lastPaint=now;}
-  drawHits(events);
   if(reward||now-lastSave>4000){persist();lastSave=now;}
 },50);

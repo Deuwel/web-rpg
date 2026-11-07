@@ -1,27 +1,68 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0a1119"><title>RE:RPG | 윈드해븐</title><link rel="stylesheet" href="./styles.css"></head>
-<body><a class="skip" href="#field">전장으로 이동</a>
-<header><div class="wrap mast"><a class="brand" href="./"><i aria-hidden="true"></i>RE<span>:</span>RPG</a>
-<div class="wallet" aria-label="보유 재화"><button data-money="gold" aria-label="골드"><i class="coin"></i><b id="gold">0</b></button><button data-money="stone" aria-label="강화석"><i class="ore"></i><b id="stone">0</b></button><button data-money="chaos" aria-label="혼돈 파편"><i class="shard"></i><b id="chaos">0</b></button></div>
-<button class="icon" data-open="settings" aria-label="설정">⚙</button><button class="icon" data-open="help" aria-label="도움말">?</button></div></header>
-<main class="wrap"><div id="notice" role="status" hidden></div>
-<div class="heading"><div><span class="overline">CHAPTER 01 / WINDHAVEN</span><h1>윈드해븐</h1></div><span id="status">마을 정비 중</span></div>
-<div class="layout">
-<section class="panel journey"><div class="panelhead"><h2>탐험 경로</h2><span>지역 01</span></div><div class="pad">
-<div class="route"><div><i>⌂</i><span><b>윈드해븐 마을</b><small>정비와 성장</small></span></div><div><i>◇</i><span><b>변두리 들판</b><small>권장 Lv.5 | Lv.1부터 입장</small></span></div></div>
-<label for="depth">탐험 깊이</label><select id="depth"></select>
-<div class="spread minor"><span>보스 도전 조건</span><b id="progress">0 / 10승</b></div><div class="bar"><i id="progress-bar"></i></div>
-<button id="start" class="primary full">탐험 시작 <b>→</b></button><button id="boss" class="full">감시자 도전 <b>◇</b></button><small id="boss-count"></small>
-</div></section>
-<section class="panel field" id="field"><div class="panelhead"><div class="inline"><span class="badge" id="live">대기</span><h2>변두리 들판</h2></div><div class="inline field-tools"><button id="pause">일시정지</button><button id="retreat">마을 귀환</button></div></div>
-<div id="arena" class="arena"><div class="rings" aria-hidden="true"></div><div class="fighter hero" id="player"><small id="hero-level"></small><strong id="hero-name"></strong><div class="art"><i class="hero-shape"></i></div><div class="vitals"><span>HP</span><b id="hp-count"></b></div><div class="bar"><i id="hp"></i></div><div class="bar mp"><i id="mp"></i></div><div class="bar gauge"><i id="gauge"></i></div><small id="buff"></small></div><div id="enemies"></div><div id="portal"><div class="portal-shape"></div><b id="portal-title">들판 입구</b><small id="portal-note">탐험을 시작하면 적이 등장합니다.</small><button class="launch" id="quick-start">탐험 시작 →</button></div><div id="effects" aria-hidden="true"></div><div class="arenafoot"><span id="last-action"></span><span id="encounter"></span></div></div>
-<div class="dock"><div><label>다음 차례 스킬 예약</label><div class="inline" id="reservations"></div></div><div><label>포션 | 턴 소모 없음</label><div class="inline" id="potions"></div></div></div>
-<div class="summarystrip"><span id="mp-count"></span><span id="interval"></span><span id="kills"></span></div></section>
-<section class="panel tactics"><div class="panelhead"><h2>자동 전술</h2><span class="mint">자동 사용</span></div><div class="pad" id="rule-list"></div><div class="tactic-foot"><small>동순위에서는 조건을 만족한 스킬이 먼저 발동합니다.</small><button class="text" data-open="skills">전사 스킬 습득 ↗</button></div></section>
-<section class="panel character"><div class="panelhead"><h2>캐릭터</h2><button class="text" data-open="stats">스탯 상세 ↗</button></div><div class="pad"><div class="level"><b id="level"></b><div><strong id="name"></strong><small id="class-name"></small></div></div><div class="spread minor"><span>EXP</span><span id="xp"></span></div><div class="bar mp"><i id="xp-bar"></i></div><div id="overview"></div><button class="full" data-open="stats" id="points"></button></div></section>
-<section class="panel bag"><div class="panelhead"><div class="inline"><button id="bag-tab" class="tab">가방</button><button id="gear-tab" class="tab">장착 장비</button></div><small id="bag-count"></small></div>
-<div class="bagtools"><select id="filter" aria-label="장비 종류 필터"><option value="">모든 부위</option><option value="weapon">무기</option><option value="armor">갑옷</option><option value="necklace">목걸이</option></select><select id="sort" aria-label="장비 정렬"><option value="recent">최근 획득</option><option value="rarity">등급순</option><option value="level">레벨순</option></select></div><p id="overflow" hidden></p><div id="items"></div></section>
-<section class="panel record"><div class="panelhead"><h2>전투 기록</h2><span id="clock">00:00</span></div><ol id="logs" tabindex="0" aria-label="최근 전투 기록"></ol></section></div>
-<footer><span>A 단계 | 전투와 파밍</span><span id="saved"></span></footer></main>
-<dialog id="dialog" aria-labelledby="dialog-title"><div class="panelhead"><h2 id="dialog-title"></h2><button id="close" class="icon" aria-label="닫기">×</button></div><div id="dialog-body"></div></dialog><div id="toast" role="status" aria-live="polite"></div>
-<script type="module" src="./src/ui.js"></script></body></html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#18223d">
+  <title>RE:RPG | 윈드해븐</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<a class="skip" href="#main">본문으로 이동</a>
+<header class="top"><div class="wrap top-inner">
+  <a class="brand" href="#battle" aria-label="RE:RPG 전장"><i></i>RE<span>:</span>RPG</a>
+  <nav aria-label="게임 화면"><a href="#battle">전장</a><a href="#inventory">인벤토리</a><a href="#tactics">자동 전술</a></nav>
+  <div class="tools"><button data-open="settings" aria-label="설정">⚙</button><button data-open="help" aria-label="도움말">?</button></div>
+</div></header>
+<section class="profile wrap" aria-label="캐릭터 정보와 재화">
+  <button class="identity" data-open="stats" aria-label="캐릭터 스탯 상세"><i class="crest"></i><span><small id="class-name"></small><b id="name"></b></span><span class="lvl">Lv.<strong id="level"></strong></span></button>
+  <div class="xpblock"><div class="spread"><small>EXP</small><small id="xp"></small></div><div class="bar mp"><i id="xp-bar"></i></div></div>
+  <div id="overview" aria-label="주요 능력치"></div>
+  <button class="points" id="points" data-open="stats"></button>
+  <div class="wallet" aria-label="보유 재화"><button data-money="gold" aria-label="골드"><i class="coin"></i><b id="gold">0</b></button><button data-money="stone" aria-label="강화석"><i class="ore"></i><b id="stone">0</b></button><button data-money="chaos" aria-label="혼돈 파편"><i class="shard"></i><b id="chaos">0</b></button></div>
+</section>
+<main class="wrap" id="main"><div id="notice" role="status" hidden></div>
+  <section id="battle-page" class="page">
+    <div class="heading"><div><small class="eyebrow">WINDHAVEN</small><h1 tabindex="-1">변두리 들판</h1></div><span class="status" id="status">마을 정비 중</span></div>
+    <div class="battle-layout">
+      <section class="field panel" aria-label="전장">
+        <div id="arena" class="arena">
+          <div class="scenery" aria-hidden="true"><div class="sun"></div><div class="orbit o1"></div><div class="orbit o2"></div><div class="mountain far"></div><div class="mountain near"></div><div class="floor"></div><div class="star s1"></div><div class="star s2"></div><div class="star s3"></div></div>
+          <div class="arena-caption"><span class="badge" id="live">대기</span><span id="encounter"></span></div>
+          <div class="field-tools"><button id="pause">일시정지</button><button id="retreat">마을 귀환</button></div>
+          <div class="fighter hero" id="player"><small id="hero-level"></small><strong id="hero-name"></strong><div class="art"><i class="hero-shape"></i></div><div class="vitals"><span>HP</span><b id="hp-count"></b></div><div class="bar"><i id="hp"></i></div><div class="bar mp"><i id="mp"></i></div><div class="bar gauge"><i id="gauge"></i></div><small id="buff"></small></div>
+          <div id="enemies"></div>
+          <div id="portal"><div class="portal-shape"><i></i></div><b id="portal-title"></b><small id="portal-note"></small><button class="launch" id="quick-start">탐험 시작 →</button></div>
+          <div id="effects" aria-hidden="true"></div>
+          <div class="arenafoot"><div class="hit-history"><span>가한 피해 <b id="hit-dealt">—</b></span><span>받은 피해 <b id="hit-taken">—</b></span></div><span id="last-action"></span></div>
+        </div>
+        <div class="dock"><div><div class="dock-title"><h2>다음 차례 스킬 예약</h2><a class="tactics-link" href="#tactics">자동 전술 ↗</a></div><div class="inline" id="reservations"></div></div><div><div class="dock-title"><h2>포션</h2><small>턴 소모 없음</small></div><div class="inline" id="potions"></div></div></div>
+        <div class="summarystrip"><span id="mp-count"></span><span id="interval"></span><span id="kills"></span><button class="link" data-open="skills">직업과 스킬 ↗</button></div>
+      </section>
+      <aside class="side">
+        <section class="panel journey"><div class="panelhead"><h2>탐험 경로</h2><span class="compass" aria-hidden="true">✧</span></div><div class="pad">
+          <div class="route"><i aria-hidden="true">◇</i><div><b>윈드해븐</b><small>변두리 들판 | 권장 Lv.5</small></div></div>
+          <label for="depth">탐험 깊이</label><select id="depth"></select>
+          <div class="spread minor"><span>감시자 도전 조건</span><b id="progress"></b></div><div class="bar"><i id="progress-bar"></i></div>
+          <div class="route-actions"><button id="start" class="primary">탐험 시작 →</button><button id="boss">감시자 도전</button></div><small id="boss-count"></small>
+        </div></section>
+        <section class="panel record"><div class="panelhead"><h2>전투 기록</h2><span id="clock">00:00</span></div><ol id="logs" tabindex="0" aria-label="최근 전투 기록"></ol></section>
+      </aside>
+    </div>
+  </section>
+  <section id="inventory-page" class="page" hidden>
+    <div class="heading"><div><small class="eyebrow">EQUIPMENT</small><h1 tabindex="-1">인벤토리</h1></div><a class="back" href="#battle">← 전장</a></div>
+    <section class="panel bag"><div class="bag-head"><div class="bag-tabs"><button id="bag-tab" class="tab">가방</button><button id="gear-tab" class="tab">장착 장비</button></div><span id="bag-count"></span></div>
+      <div class="bagtools"><div class="categories" aria-label="장비 분류"><button data-category="">전체</button><button data-category="weapon">무기</button><button data-category="armor">갑옷</button><button data-category="necklace">목걸이</button></div><select id="sort" aria-label="장비 정렬"><option value="recent">최근 획득</option><option value="rarity">등급순</option><option value="level">레벨순</option></select></div>
+      <p id="overflow" hidden></p><small id="item-status"></small><div id="items" class="slots"></div>
+    </section>
+  </section>
+  <section id="tactics-page" class="page" hidden>
+    <div class="heading"><div><small class="eyebrow">TACTICS</small><h1 tabindex="-1">자동 전술</h1></div><a class="back" href="#battle">← 전장</a></div>
+    <section class="panel tactics"><div class="panelhead"><h2>스킬 발동 순서</h2><button class="link" data-open="skills">직업과 스킬 ↗</button></div><div id="rule-list"></div><p>우선순위 숫자가 작을수록 먼저 발동합니다. 동순위에서는 조건이 충족된 스킬이 먼저이며, 다시 동률이면 슬롯 순서를 따릅니다.</p></section>
+  </section>
+  <footer><span>RE:RPG</span><span id="saved"></span></footer>
+</main>
+<dialog id="dialog" aria-labelledby="dialog-title"><div class="panelhead"><h2 id="dialog-title"></h2><button id="close" aria-label="닫기">×</button></div><div id="dialog-body"></div><div id="dialog-feedback" role="status"></div></dialog><div id="toast" role="status"></div>
+<script type="module" src="./src/ui.js"></script>
+</body></html>
