@@ -1,7 +1,7 @@
 import {RULES, ITEMS, SKILLS, POTIONS, ENEMIES, GRADES, STATS, CONDITIONS, SLOT_NAMES} from './data.js';
 
 export const xpRequired = level => 18 + level*7;
-export const itemName = item => GRADES[item.rarity]+' '+ITEMS[item.template].name;
+export const itemName = item => GRADES[item.rarity]+' '+ITEMS[item.template].name+' +'+item.enhancement;
 export const price = item => Math.ceil((6+item.level*3)*[1,1.3,1.7][item.rarity]);
 export function random(s,channel='combat'){
   let x=s.rng[channel]>>>0;
@@ -45,6 +45,7 @@ export function summary(s,equipment=s.equipment){
   const primary=Object.fromEntries(Object.keys(STATS).map(k=>[k,{invested:s.stats[k],gear:0,other:0,total:s.stats[k]}]));
   const gear={...blank},skills={...blank};
   for(const item of Object.values(equipment).filter(Boolean)){
+    for(const line of item.potential||[]){primary[line.key].gear+=line.value;primary[line.key].total+=line.value;}
     for(const [key,value] of Object.entries(itemStats(item))){
       if(primary[key]){primary[key].gear+=value;primary[key].total+=value;}
       else gear[key]+=value;
@@ -102,7 +103,9 @@ export function generateItem(s,boss=false,monsterLevel=1+s.combat.depth*5){
   const roll=random(s,'loot'),rarity=boss?(roll<.28?2:1):(roll<.7?0:roll<.95?1:2);
   const pool=Object.keys(ITEMS),template=pool[Math.floor(random(s,'loot')*pool.length)];
   const level=Math.max(1,Math.min(20,Math.floor(monsterLevel/5)*5));
-  return {id:'item-'+s.nextId++,template,level,rarity,quality:50,enhancement:0,protected:false};
+  const item={id:'item-'+s.nextId++,template,level,rarity,quality:50,enhancement:0,protected:false};
+  item.potential=Array.from({length:rarity+1},()=>rollLine(s,item));
+  return item;
 }
 function reward(s,enemy,events){
   if(enemy.rewarded)return;
@@ -224,10 +227,30 @@ export function buyPotion(s,id){
   if(!p||BigInt(s.currency.gold)<BigInt(p.price))return '골드가 부족합니다.';
   add(s,'gold',-p.price);s.potions[id]++;
 }
-export function allocate(s,key){
-  if(s.combat.active)return '마을에서 투자하세요.';
-  if(!Object.hasOwn(STATS,key)||!s.points)return '남은 포인트가 없습니다.';
-  s.stats[key]++;s.points--;recover(s);
+function fitResources(s){
+  if(!s.combat.active)return recover(s);
+  const t=summary(s).total;
+  for(const key of ['hp','mp','gauge'])s.combat[key]=Math.min(s.combat[key],t[key]);
+}
+export function allocate(s,key,amount=1){
+  if(!Object.hasOwn(STATS,key)||![-10,-1,1,10].includes(amount)||s.points<amount||s.stats[key]+amount<0)return '분배 가능한 포인트를 확인하세요.';
+  s.stats[key]+=amount;s.points-=amount;fitResources(s);
+}
+export function potentialCost(item){
+  const factor=3**(item.potential||[]).filter(p=>p.locked).length;
+  return {gold:(200+20*item.level)*(item.rarity+1)*factor,chaos:factor};
+}
+function rollLine(s,item){
+  const keys=Object.keys(STATS);
+  return {key:keys[Math.floor(random(s,'loot')*keys.length)],value:1+Math.floor(random(s,'loot')*(1+item.rarity+Math.ceil(item.level/5))),locked:false};
+}
+export function reroll(s,item){
+  const cost=potentialCost(item);
+  if(item.potential?.every(p=>p.locked))return '한 줄 이상 잠금을 해제하세요.';
+  if(Object.entries(cost).some(([k,v])=>BigInt(s.currency[k])<v))return '골드 또는 혼돈 파편이 부족합니다.';
+  for(const [k,v] of Object.entries(cost))add(s,k,-v);
+  item.potential=Array.from({length:item.rarity+1},(_,i)=>item.potential?.[i]?.locked?item.potential[i]:rollLine(s,item));
+  fitResources(s);
 }
 export function resetStats(s){
   if(s.combat.active)return '마을에서 재분배하세요.';
@@ -253,15 +276,15 @@ export function targetSlot(s,item,preferred){
 }
 export function equip(s,id,preferred){
   const index=s.inventory.findIndex(i=>i.id===id),item=s.inventory[index];
-  if(s.combat.active||!item||item.level>s.level)return '마을에서 착용 레벨을 확인하세요.';
+  if(!item||item.level>s.level)return '착용 레벨을 확인하세요.';
   const slot=targetSlot(s,item,preferred),old=s.equipment[slot];
   s.inventory.splice(index,1);s.equipment[slot]=item;
   if(old)s.inventory.push(old);
-  collectOverflow(s);recover(s);
+  collectOverflow(s);fitResources(s);
 }
 export function unequip(s,slot){
-  if(s.combat.active||!s.equipment[slot]||s.inventory.length>=RULES.capacity)return '마을에서 가방 공간을 확보하세요.';
-  s.inventory.push(s.equipment[slot]);s.equipment[slot]=null;recover(s);
+  if(!s.equipment[slot]||s.inventory.length>=RULES.capacity)return '마을에서 가방 공간을 확보하세요.';
+  s.inventory.push(s.equipment[slot]);s.equipment[slot]=null;fitResources(s);
 }
 export function collectOverflow(s){
   while(s.inventory.length<RULES.capacity&&s.overflow.length)s.inventory.push(s.overflow.shift());

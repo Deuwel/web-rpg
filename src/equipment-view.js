@@ -1,5 +1,5 @@
 import { GRADES, ITEMS, LABELS, SLOT_NAMES, STATS } from './data.js';
-import { itemName, itemStats, price, summary, targetSlot } from './game.js';
+import { itemName, itemStats, price, potentialCost, summary, targetSlot } from './game.js';
 
 const number = value => Number(value.toFixed(2)).toLocaleString('ko-KR');
 const signed = n => (n > 0 ? '+' : '') + number(n);
@@ -23,7 +23,7 @@ export function itemTile(item, equipped) {
   const info=ITEMS[item.template];
   return '<button class="tile grade'+item.rarity+'" data-item="'+item.id+'" aria-label="'+itemName(item)+' 상세">'
     +'<span class="tile-meta">Lv.'+item.level+'<span>'+(item.protected?'잠금':equipped?'장착':'')+'</span></span>'
-    +art(item.template)+'<b>'+info.name+'</b><small>'+GRADES[item.rarity]+' | '+info.type+'</small></button>';
+    +art(item.template)+'<b>'+info.name+' +'+item.enhancement+'</b><small>'+GRADES[item.rarity]+' | '+info.type+'</small></button>';
 }
 export function itemCard(state,item,action,preferred) {
   const info=ITEMS[item.template], slot=targetSlot(state,item,preferred), worn=state.equipment[slot], equipped=worn?.id===item.id;
@@ -44,11 +44,13 @@ export function itemCard(state,item,action,preferred) {
   const waiting=state.overflow.some(i=>i.id===item.id);
   const ringChoice=info.slot==='ring1'&&bagged?'<label>비교할 반지 슬롯<select id="ring-choice">'+['ring1','ring2'].map(k=>'<option value="'+k+'"'+(k===slot?' selected':'')+'>'+SLOT_NAMES[k]+'</option>').join('')+'</select></label>':'';
   const [tag,note]=specialty[item.template];
-  return '<article class="item-card grade'+item.rarity+'"><div class="card-lead"><div class="artframe">'+art(item.template)+'</div><div><small>'+GRADES[item.rarity]+' | '+SLOT_NAMES[slot]+'</small><h3>'+info.name+'</h3><span>'+info.type+'　Lv.'+item.level+'</span></div></div>'
-    +'<div class="card-meta"><span>품질 <b>'+item.quality+'%</b></span><span>강화 <b>+'+item.enhancement+'</b></span><span>'+(equipped?'장착 중':waiting?'임시 획득함':!bagged?'판매 완료':state.level<item.level?'착용 레벨 부족':'가방 보관')+'</span></div>'
-    +'<h4>장비 능력치</h4><div class="statcells">'+stats+'</div><div class="special"><b>'+tag+'</b><span>'+note+'</span></div>'
+  return '<article class="item-card grade'+item.rarity+'"><div class="card-lead"><div class="artframe">'+art(item.template)+'</div><div><small>'+GRADES[item.rarity]+' | '+SLOT_NAMES[slot]+'</small><h3>'+info.name+' <em>+'+item.enhancement+'</em></h3><span>'+info.type+'　Lv.'+item.level+'</span></div></div>'
+    +'<div class="card-meta"><span>품질 <b>'+item.quality+'%</b></span><progress aria-label="품질" max="100" value="'+item.quality+'"></progress><span>'+(equipped?'장착 중':waiting?'임시 획득함':!bagged?'판매 완료':state.level<item.level?'착용 레벨 부족':'가방 보관')+'</span></div>'
+    +'<h4>장비 능력치</h4><div class="base-lines">'+stats+'</div><div class="special"><b>'+tag+'</b><span>'+note+'</span></div>'
+    +'<h4>잠재능력</h4>'+(item.potential||[]).map((p,i)=>'<div class="potential-line">'+STATS[p.key][0]+' +'+p.value+((equipped||bagged)?action('line-lock',i,p.locked?'잠금 해제':'줄 잠금'):'')+'</div>').join('')
+    +((equipped||bagged)?action('reroll','',(item.potential?'재설정':'잠재 개방')+' | 골드 '+potentialCost(item).gold+' | 혼돈 파편 '+potentialCost(item).chaos):'')
     +ringChoice+'<h4>'+(equipped?'해제':'착용')+' 시 변화</h4><small>현재 장비 | '+(worn?itemName(worn):'빈 슬롯')+'</small>'
     +(deltas.length?'<table class="comparison"><thead><tr><th>능력치</th><th>현재</th><th>예상</th><th>차이</th></tr></thead><tbody>'+deltas.join('')+'</tbody></table>':'<p>교체해도 최종 능력치는 같습니다.</p>')
-    +((equipped||bagged)?'<div class="actions">'+(equipped?action('unequip',slot,'해제',state.combat.active):action('equip',item.id,'장착',state.combat.active||state.level<item.level))
+    +((equipped||bagged)?'<div class="actions">'+(equipped?action('unequip',slot,'해제',state.inventory.length>=60):action('equip',item.id,'장착',state.level<item.level))
     +action('lock',item.id,item.protected?'잠금 해제':'잠금')+(equipped?'':action('sell',item.id,'판매 | '+price(item)+' 골드',item.protected))+'</div>':'')+'</article>';
 }

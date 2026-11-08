@@ -11,7 +11,7 @@
 <a class="skip" href="#main">본문으로 이동</a>
 <header class="top"><div class="wrap top-inner">
   <a class="brand" href="#battle" aria-label="RE:RPG 전장"><i></i>RE<span>:</span>RPG</a>
-  <nav aria-label="게임 화면"><a href="#battle">전장</a><a href="#inventory">인벤토리</a><a href="#tactics">자동 전술</a></nav>
+  <nav aria-label="게임 화면"><a href="#battle">전장</a><a href="#inventory">인벤토리</a><a href="#skills">직업과 스킬</a></nav>
   <div class="tools"><button data-open="settings" aria-label="설정">⚙</button><button data-open="help" aria-label="도움말">?</button></div>
 </div></header>
 
@@ -30,9 +30,9 @@
           <div id="effects" aria-hidden="true"></div>
           <div class="arenafoot"><div class="hit-history"><span>가한 피해 <b id="hit-dealt">—</b></span><span>받은 피해 <b id="hit-taken">—</b></span></div><span id="last-action"></span></div>
         </div>
-        <div class="reward-strip"><strong>획득 기록</strong><div id="field-rewards"></div></div>
+        <div class="reward-strip"><div><strong>획득 기록</strong><button class="link" data-open="rates">드롭률</button></div><div id="field-rewards"></div></div>
         <div class="dock"><div><div class="dock-title"><h2>다음 차례 스킬 예약</h2><a class="tactics-link" href="#tactics">자동 전술 ↗</a></div><div class="inline" id="reservations"></div></div><div><div class="dock-title"><h2>포션</h2><small>턴 소모 없음</small></div><div class="inline" id="potions"></div></div></div>
-        <div class="summarystrip"><span id="mp-count"></span><span id="interval"></span><span id="kills"></span><button class="link" data-open="skills">직업과 스킬 ↗</button></div>
+        <div class="summarystrip"><span id="mp-count"></span><span id="interval"></span><span id="kills"></span><a href="#skills">직업과 스킬 ↗</a></div>
       </section>
       <section class="panel recent-panel" aria-label="최근 획득 장비">
         <div class="panelhead"><h2>최근 획득 장비</h2><a class="link" href="#inventory">가방 열기 ↗</a></div>
@@ -68,9 +68,11 @@
       <p id="overflow" hidden></p><small id="item-status"></small><div id="items" class="slots"></div>
     </section></div>
   </section>
-  <section id="tactics-page" class="page" hidden>
-    <div class="heading"><div><small class="eyebrow">TACTICS</small><h1 tabindex="-1">자동 전술</h1></div><a class="back" href="#battle">← 전장</a></div>
-    <section class="panel tactics"><div class="panelhead"><h2>스킬 발동 순서</h2><button class="link" data-open="skills">직업과 스킬 ↗</button></div><div id="rule-list"></div><p>우선순위 숫자가 작을수록 먼저 발동합니다. 동순위에서는 조건이 충족된 스킬이 먼저이며, 다시 동률이면 슬롯 순서를 따릅니다.</p></section>
+  <section id="skills-page" class="page" hidden>
+    <div class="heading"><div><small class="eyebrow">CLASS</small><h1 tabindex="-1">직업과 스킬</h1></div><a class="back" href="#battle">← 전장</a></div>
+    <div class="actions"><a href="#skills">스킬 트리</a><a href="#tactics">자동 전술</a></div>
+    <section class="panel tactics" id="skill-tree"></section>
+    <section class="panel tactics" id="tactic-editor"><h2>자동 전술</h2><p>위 그룹부터 확인합니다. 같은 그룹에서는 조건을 만족한 스킬이 먼저, 동률이면 위쪽 스킬이 먼저입니다.</p><div id="rule-list"></div></section>
   </section>
   <footer><span>RE:RPG</span><span id="saved"></span></footer>
 </main>

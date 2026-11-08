@@ -1,4 +1,4 @@
-export const RULES = {maxLevel:20, capacity:60, bossWins:10, step:0.05, dropRate:0.28, stoneRate:0.06, chaosRate:0.002, bossChaosRate:0.15};
+export const RULES = {maxLevel:20, capacity:60, bossWins:10, step:0.05, dropRate:0.12, stoneRate:0.06, chaosRate:0.002, bossChaosRate:0.15};
 export const STATS = {
   str:['힘','물리 공격 +1 | 힘 10당 방어 +1'], dex:['민첩','민첩 10당 속도 +3 | 100당 치명타 +3%p'],
   int:['지능','마법 공격 +1 | MP +2'], vit:['체력','HP +8 | 체력 4당 방어 +1 | 20당 저항 +3'],

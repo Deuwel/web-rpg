@@ -104,7 +104,7 @@ function renderBag(){
 function primaryRows(v,town){
   return Object.entries(STATS).map(([k,[name,desc]])=>{
     const a=v.primary[k];
-    return '<div class="row"><div><b>'+name+' <strong>'+a.total+'</strong></b> <span class="sources">('+a.invested+' + <em class="gearcol">'+a.gear+'</em> + <em class="skillcol">'+a.other+'</em>)</span><small>'+desc+'</small></div>'+action('allocate',k,'+1',!town||!s.points)+'</div>';
+    return '<div class="row"><div><b>'+name+' <strong>'+a.total+'</strong></b> <span class="sources">('+a.invested+' + <em class="gearcol">'+a.gear+'</em> + <em class="skillcol">'+a.other+'</em>)</span><small>'+desc+'</small></div>'+'<div class="point-controls">'+[-1,-10,1,10].map(n=>action('allocate',k+'/'+n,n>0?'+'+n:n,s.points<n||s.stats[k]+n<0)).join('')+'</div>'+'</div>';
   }).join('');
 }
 function render(){
@@ -119,7 +119,14 @@ function render(){
   $('depth').disabled=c.active;
   const wins=s.progress.wins[selectedDepth];txt('progress',Math.min(wins,10)+' / 10승');meter($('progress-bar'),wins,10);
   txt('boss-count','누적 '+wins+'승 | 감시자 격파 '+s.progress.bosses[selectedDepth]+'회');$('boss').disabled=c.active||wins<10;$('start').disabled=c.active;
-  $('rule-list').innerHTML=s.tactics.map((r,i)=>'<button class="rule" data-rule="'+i+'"><span class="priority">'+String(r.priority).padStart(2,'0')+'</span><span><small>슬롯 '+(i+1)+' | '+(s.learned.includes(r.skill)?'습득':'미습득')+'</small><b>'+SKILLS[r.skill].name+'</b><em>'+condition(r)+'</em></span><span class="edit">편집 ↗</span></button>').join('');
+  const levels=[...new Set(Object.values(SKILLS).map(v=>v.level))].sort((a,b)=>a-b);
+  const node=([k,v])=>'<div class="skill-node"><span class="skill-mark" aria-hidden="true">'+({cleave:'╱',shout:'◎',sweep:'≋',endurance:'⬡'})[k]+'</span><b>'+v.name+'</b><small>'+v.desc+'</small>'+action('learn',k,s.learned.includes(k)?'습득 완료':v.cost+' SP 습득',c.active||!s.classId||s.level<v.level||s.skillPoints<v.cost||s.learned.includes(k))+'</div>';
+  $('skill-tree').innerHTML='<h2>전사</h2><p>물리 공격과 생존에 특화 | Lv.5 전직 | 보유 SP '+s.skillPoints+'</p>'+action('warrior','',s.classId?'전직 완료':'마을에서 전사 선택',c.active||!!s.classId||s.level<5)+'<div class="tree-row"><b>레벨</b><b>액티브</b><b>패시브</b></div>'+levels.map(l=>'<div class="tree-row"><strong>Lv.'+l+'</strong>'+[false,true].map(passive=>'<div>'+Object.entries(SKILLS).filter(([,v])=>v.level===l&&!!v.passive===passive).map(node).join('')+'</div>').join('')+'</div>').join('');
+  const groups=ruleGroups();
+  $('rule-list').innerHTML=groups.map((group,g)=>'<section class="rule-group"><h3>'+['먼저 사용','다음에 사용','마지막에 사용'][g]+'</h3>'+group.map(i=>{
+    const r=s.tactics[i];
+    return '<div class="rule-edit"><button data-rule="'+i+'"><b>'+SKILLS[r.skill].name+'</b> | '+condition(r)+'</button><div>'+action('earlier',i,'↑',g===0&&group.length===1)+action('later',i,'↓',g===groups.length-1&&group.length===1)+action('tie',i,'위와 동순위',!g)+'</div></div>';
+  }).join('')+'</section>').join('');
   $('reservations').innerHTML=Object.keys(SKILLS).filter(k=>!SKILLS[k].passive).map(id=>'<button data-reserve="'+id+'">'+SKILLS[id].name.replace('전투의 ','')+'</button>').join('');
   $('potions').innerHTML=s.potionSlots.map((k,i)=>'<button data-potion="'+i+'" aria-label="'+(POTIONS[k]?.name||'빈 포션 슬롯')+'">'+(k?k.toUpperCase():'—')+'<small></small></button>').join('');
   renderBag();renderLive();
@@ -138,12 +145,10 @@ function modalContent(){
     const v=game.summary(s), rows=Object.keys(LABELS).map(k=>'<tr><td>'+LABELS[k]+'</td><td>'+num(v.base[k]+v.invested[k])+'</td><td class="gearcol">'+num(v.gear[k])+'</td><td class="skillcol">'+num(v.skills[k])+'</td><td>'+num(v.total[k])+'</td></tr>').join('');
     return ['스탯 상세','<h3>남은 스탯 포인트 '+s.points+'</h3>'+'<p>최종 (투자 + <span class="gearcol">장비</span> + <span class="skillcol">기타</span>)</p>'+primaryRows(v,town)+'<div class="actions">'+action('reset','','무료 재분배',!town||!Object.values(s.stats).some(Boolean))+'</div><p>기본 열에는 레벨 성장과 투자한 포인트가 포함됩니다.</p><table><thead><tr><th>능력치</th><th>기본</th><th class="gearcol">장비</th><th class="skillcol">스킬</th><th>합계</th></tr></thead><tbody>'+rows+'</tbody></table>'];
   }
-  if(view==='skills'){
-    return ['직업과 스킬',row(s.classId?'전사':'모험가','Lv.5부터 마을에서 전사를 선택할 수 있습니다.',action('warrior','','전사 선택',!town||!!s.classId||s.level<5))+'<p>보유 SP '+s.skillPoints+' | Lv.5부터 레벨마다 1 SP를 얻습니다.</p>'+Object.entries(SKILLS).map(([k,v])=>row(v.name+' | Lv.'+v.level,v.desc+(v.passive?' | 패시브':' | MP '+v.mp+' | '+v.cd+'턴'),action('learn',k,s.learned.includes(k)?'습득 완료':v.cost+' SP 습득',!town||!s.classId||s.level<v.level||s.skillPoints<v.cost||s.learned.includes(k)))).join('')];
-  }
+  if(view==='rates')return ['처치당 드롭률',row('장비','일반 '+RULES.dropRate*100+'% | 보스 100%')+row('강화석','일반 및 보스 '+RULES.stoneRate*100+'%')+row('혼돈 파편','일반 '+RULES.chaosRate*100+'% | 보스 '+RULES.bossChaosRate*100+'%')];
   if(view==='rule'){
     const r=s.tactics[subject];
-    return ['전술 슬롯 '+(Number(subject)+1),'<div class="formgrid"><label>스킬<select id="r-skill">'+Object.entries(SKILLS).filter(([,v])=>!v.passive).map(([k,v])=>option(k,v.name,r.skill)).join('')+'</select></label><label>우선순위<input type="number" id="r-priority" min="1" max="9" value="'+r.priority+'"></label><label>발동 조건<select id="r-cond">'+Object.entries(CONDITIONS).map(([k,v])=>option(k,v,r.condition)).join('')+'</select></label><label>N 값<input type="number" id="r-value" min="1" max="100" value="'+r.value+'"></label></div><p>작은 우선순위부터 판정합니다. 동순위에서는 조건을 만족한 스킬, 그다음은 위쪽 슬롯이 먼저입니다. 사용할 수 있는 스킬이 없으면 기본 공격합니다.</p><div class="actions">'+action('apply-rule','','적용')+'</div>'];
+    return ['전술 슬롯 '+(Number(subject)+1),'<div class="formgrid"><label>스킬<select id="r-skill">'+Object.entries(SKILLS).filter(([,v])=>!v.passive).map(([k,v])=>option(k,v.name,r.skill)).join('')+'</select></label><label>발동 조건<select id="r-cond">'+Object.entries(CONDITIONS).map(([k,v])=>option(k,v,r.condition)).join('')+'</select></label><label>N 값<input type="number" id="r-value" min="1" max="100" value="'+r.value+'"></label></div><p>작은 우선순위부터 판정합니다. 동순위에서는 조건을 만족한 스킬, 그다음은 위쪽 슬롯이 먼저입니다. 사용할 수 있는 스킬이 없으면 기본 공격합니다.</p><div class="actions">'+action('apply-rule','','적용')+'</div>'];
   }
   if(view==='item'){
     const i=findItem(subject);if(!i)return ['장비 상세','처리한 장비입니다.'];
@@ -154,7 +159,7 @@ function modalContent(){
   }
   if(view==='import')return ['저장 파일 불러오기','<p>'+escape(pending.nickname)+' | Lv.'+pending.level+' | '+pending.progress.kills+'마리 처치</p><p>현재 진행을 이 파일의 진행으로 교체합니다.</p><div class="actions">'+action('confirm-import','','이 진행 불러오기')+'</div>'];
   if(view==='money')return [names[subject],'<p class="wallet-full">'+escape(BigInt(s.currency[subject]).toLocaleString('ko-KR'))+'</p><p>'+({gold:'몬스터 처치와 장비 판매로 얻습니다. 마을에서 포션을 구입할 수 있습니다.',stone:'몬스터 처치 시 낮은 확률로 획득합니다.',chaos:'일반 몬스터에게서 매우 낮은 확률로, 보스에게서 더 높은 확률로 획득합니다.'}[subject])+'</p>'];
-  return ['탐험 도움말',row('탐험과 귀환','일반 전투에서는 적 1~3명이 등장합니다. 적을 눌러 공격 대상을 고를 수 있습니다. 같은 깊이에서 10승을 거두고 귀환하면 보스에게 도전할 수 있습니다.')+row('행동과 포션','노란 게이지가 차면 행동합니다. 스킬 버튼은 다음 행동을 예약하고 포션은 즉시 소비합니다. 같은 포션을 두 칸에 등록하면 수량과 쿨타임을 공유합니다.')+row('스탯 읽는 법','최종 스탯은 직접 투자한 포인트, 파란색 장비 보너스, 보라색 기타 보너스의 합입니다. 장비로 오른 힘과 민첩도 전투에 반영됩니다. 파생 능력치는 출처별 누적 보너스를 정수로 계산합니다.')+row('일시정지와 저장','가방이나 다른 탭을 확인하는 동안에도 전투가 이어집니다. 일시정지 버튼으로 직접 멈출 수 있습니다. 창을 닫고 저장을 다시 열면 일시정지 상태로 복원됩니다.')+row('장비와 성장','마을에서 장비를 교체하고 스탯을 분배합니다. 중갑은 속도가 감소하고 순환의 목걸이는 행동에 필요한 게이지를 줄입니다.')+row('이번 단계','최대 Lv.20 | 전사 | 변두리 들판 4개 깊이. 쌍수는 후속 단계에서 열립니다. 주무기 100% → 보조무기 60% 순으로 개별 치명타를 판정하고, 첫 타격으로 처치하면 두 번째 타격은 취소합니다.')];
+  return ['탐험 도움말',row('탐험과 귀환','일반 전투에서는 적 1~3명이 등장합니다. 적을 눌러 공격 대상을 고를 수 있습니다. 같은 깊이에서 10승을 거두고 귀환하면 보스에게 도전할 수 있습니다.')+row('행동과 포션','노란 게이지가 차면 행동합니다. 스킬 버튼은 다음 행동을 예약하고 포션은 즉시 소비합니다. 같은 포션을 두 칸에 등록하면 수량과 쿨타임을 공유합니다.')+row('스탯 읽는 법','최종 스탯은 직접 투자한 포인트, 파란색 장비 보너스, 보라색 기타 보너스의 합입니다. 장비로 오른 힘과 민첩도 전투에 반영됩니다. 파생 능력치는 출처별 누적 보너스를 정수로 계산합니다.')+row('일시정지와 저장','가방이나 다른 탭을 확인하는 동안에도 전투가 이어집니다. 일시정지 버튼으로 직접 멈출 수 있습니다. 창을 닫고 저장을 다시 열면 일시정지 상태로 복원됩니다.')+row('장비와 성장','탐험 중에도 장비를 교체하고 스탯을 분배할 수 있습니다. 중갑은 속도가 감소하고 순환의 목걸이는 행동에 필요한 게이지를 줄입니다.')+row('이번 단계','최대 Lv.20 | 전사 | 변두리 들판 4개 깊이. 쌍수는 후속 단계에서 열립니다. 주무기 100% → 보조무기 60% 순으로 개별 치명타를 판정하고, 첫 타격으로 처치하면 두 번째 타격은 취소합니다.')];
 }
 function finish(error,refresh=true){
   if(error){toast(error);return;}
@@ -164,6 +169,21 @@ function finish(error,refresh=true){
 function download(){
   const url=URL.createObjectURL(new Blob([JSON.stringify(s,null,2)],{type:'application/json'}));
   const a=document.createElement('a');a.href=url;a.download='re-rpg-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+function ruleGroups(){
+  const priorities=[...new Set(s.tactics.map(r=>r.priority))].sort((a,b)=>a-b);
+  return priorities.map(p=>s.tactics.map((r,i)=>r.priority===p?i:-1).filter(i=>i>=0));
+}
+function moveRule(i,cmd){
+  const groups=ruleGroups(),g=groups.findIndex(group=>group.includes(i));
+  const original=groups[g];
+  original.splice(original.indexOf(i),1);
+  if(cmd==='tie')groups[g-1].push(i);
+  else{
+    const index=cmd==='earlier'?(original.length?g:g-1):(original.length?g+1:g+2);
+    groups.splice(index,0,[i]);
+  }
+  s.tactics=groups.filter(group=>group.length).flatMap((group,rank)=>group.map(id=>({...s.tactics[id],priority:rank+1})));
 }
 function command(cmd,value){
   switch(cmd){
@@ -178,14 +198,21 @@ function command(cmd,value){
       const n=$('nickname').value.trim();if(!n)return toast('닉네임을 입력하세요.');s.nickname=n;break;
     }
     case 'apply-rule':{
-      const err=game.editRule(s,Number(subject),{skill:$('r-skill').value,priority:$('r-priority').value,condition:$('r-cond').value,value:$('r-value').value});
+      const err=game.editRule(s,Number(subject),{skill:$('r-skill').value,priority:s.tactics[subject].priority,condition:$('r-cond').value,value:$('r-value').value});
       if(!err)$('dialog').close();return finish(err);
     }
     case 'warrior':return finish(game.chooseWarrior(s));
     case 'reset':return finish(game.resetStats(s));
     case 'learn':return finish(game.learn(s,value));
     case 'buy':return finish(game.buyPotion(s,value));
-    case 'allocate':return finish(game.allocate(s,value));
+    case 'earlier':case 'later':case 'tie':moveRule(Number(value),cmd);return finish();
+    case 'allocate':{const [key,n]=value.split('/');return finish(game.allocate(s,key,Number(n)));}
+    case 'line-lock':case 'reroll':{
+      const item=[...s.inventory,...Object.values(s.equipment)].find(i=>i?.id===subject);
+      if(!item)return;
+      if(cmd==='reroll')return finish(game.reroll(s,item));
+      item.potential[value].locked=!item.potential[value].locked;return finish();
+    }
     case 'equip':return finish(game.equip(s,value,ringSlot));
     case 'unequip':return finish(game.unequip(s,value));
     case 'lock':{const i=findItem(value);if(i)i.protected=!i.protected;break;}
@@ -244,7 +271,8 @@ window.addEventListener('pagehide',()=>{advanceClock();persist();lockRelease?.()
 window.addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
 window.addEventListener('storage',e=>{if(!writable&&e.key===KEY){retrieve();lastEnemies='!';lastLog=-1;render();}});
 function navigate(focus=false){
-  const page=['tactics','inventory'].includes(location.hash.slice(1))?location.hash.slice(1):'battle';
+  const hash=location.hash.slice(1),page=hash==='inventory'?hash:['skills','tactics'].includes(hash)?'skills':'battle';
+  $('skill-tree').hidden=hash==='tactics';$('tactic-editor').hidden=hash!=='tactics';
 
   for(const section of document.querySelectorAll('main .page'))section.hidden=section.id!==page+'-page';
   for(const link of document.querySelectorAll('nav a')){

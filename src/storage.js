@@ -18,6 +18,7 @@ export function validate(s){
   function item(i,ids=seen){
     check(i&&Object.hasOwn(ITEMS,i.template)&&/^item-\d+$/.test(i.id)&&!ids.has(i.id)&&Number(i.id.slice(5))<s.nextId,'장비 소유권');
     check([1,5,10,15,20].includes(i.level)&&integer(i.rarity,0,2)&&i.quality===50&&i.enhancement===0&&typeof i.protected==='boolean','장비 수치');
+    if(i.potential!==undefined)check(Array.isArray(i.potential)&&i.potential.length===i.rarity+1&&i.potential.every(p=>p&&Object.hasOwn(STATS,p.key)&&integer(p.value,1,1+i.rarity+Math.ceil(i.level/5))&&typeof p.locked==='boolean'),'잠재능력');
     ids.add(i.id);
   }
   check(integer(s.nextId,1)&&integer(s.revision),'저장 번호');

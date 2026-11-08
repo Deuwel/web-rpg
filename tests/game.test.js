@@ -61,15 +61,15 @@ test('monster level caps equipment requirements for normal and boss loot', () =>
 
 test('two rings use separate slots and their integer attributes affect combat', () => {
   const state=g.createGame(8);
-  const makeRing=()=>({...g.generateItem(state),template:'ring',rarity:0,level:1});
+  const makeRing=()=>({...g.generateItem(state),template:'ring',rarity:0,level:1,potential:[{key:'int',value:1,locked:false}]});
   const first=makeRing(),second=makeRing(),third=makeRing();
   state.inventory.push(first,second,third);
   for(const ring of [first,second])assert.equal(g.equip(state,ring.id),undefined);
   assert.equal(state.equipment.ring1.id,first.id);
   assert.equal(state.equipment.ring2.id,second.id);
   const stats=g.summary(state);
-  assert.deepEqual(stats.primary.int,{invested:0,gear:4,other:0,total:4});
-  assert.equal(stats.total.magic,stats.base.magic+4);
+  assert.deepEqual(stats.primary.int,{invested:0,gear:6,other:0,total:6});
+  assert.equal(stats.total.magic,stats.base.magic+6);
   g.equip(state,third.id,'ring2');
   assert.equal(state.equipment.ring2.id,third.id);
   assert.ok(state.inventory.some(i=>i.id===second.id));
@@ -105,4 +105,24 @@ test('integer gear, primary and derived totals match the breakdown shown for bat
   }
   g.enter(state);state.combat.mp=0;
   for(let i=0;i<30;i++){g.tick(state);assert.ok(Number.isInteger(state.combat.mp));assert.ok(Number.isInteger(state.combat.hp));}
+});
+
+test('combat adjustments consume exact points and cannot restore missing health',()=>{
+  const s=trained();s.combat.hp=12;
+  const before=s.points;
+  for(const n of [10,-1,1,-10])assert.equal(g.allocate(s,'vit',n),undefined);
+  assert.equal(s.points,before);assert.equal(s.combat.hp,12);
+  assert.ok(g.allocate(s,'vit',-1));
+  const item=g.generateItem(s);s.inventory.push(item);
+  assert.equal(g.equip(s,item.id),undefined);assert.equal(s.combat.hp,12);validate(s);
+});
+test('reroll costs scale with locks and survive save round trip',()=>{
+  const s=g.createGame(91),item=g.generateItem(s,true);
+  s.inventory.push(item);item.potential[0].locked=true;
+  const line={...item.potential[0]},cost=g.potentialCost(item);
+  assert.equal(cost.chaos,3);assert.ok(g.reroll(s,item));
+  s.currency.gold=String(cost.gold);s.currency.chaos='3';
+  assert.equal(g.reroll(s,item),undefined);assert.deepEqual(item.potential[0],line);
+  assert.equal(s.currency.gold,'0');assert.equal(s.currency.chaos,'0');
+  assert.deepEqual(parse(JSON.stringify(s)).inventory,s.inventory);
 });
