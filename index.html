@@ -14,18 +14,12 @@
   <nav aria-label="게임 화면"><a href="#battle">전장</a><a href="#inventory">인벤토리</a><a href="#tactics">자동 전술</a></nav>
   <div class="tools"><button data-open="settings" aria-label="설정">⚙</button><button data-open="help" aria-label="도움말">?</button></div>
 </div></header>
-<section class="profile wrap" aria-label="캐릭터 정보와 재화">
-  <button class="identity" data-open="stats" aria-label="캐릭터 스탯 상세"><i class="crest"></i><span><small id="class-name"></small><b id="name"></b></span><span class="lvl">Lv.<strong id="level"></strong></span></button>
-  <div class="xpblock"><div class="spread"><small>EXP</small><small id="xp"></small></div><div class="bar mp"><i id="xp-bar"></i></div></div>
-  <div id="overview" aria-label="주요 능력치"></div>
-  <button class="points" id="points" data-open="stats"></button>
-  <div class="wallet" aria-label="보유 재화"><button data-money="gold" aria-label="골드"><i class="coin"></i><b id="gold">0</b></button><button data-money="stone" aria-label="강화석"><i class="ore"></i><b id="stone">0</b></button><button data-money="chaos" aria-label="혼돈 파편"><i class="shard"></i><b id="chaos">0</b></button></div>
-</section>
+
 <main class="wrap" id="main"><div id="notice" role="status" hidden></div>
   <section id="battle-page" class="page">
     <div class="heading"><div><small class="eyebrow">WINDHAVEN</small><h1 tabindex="-1">변두리 들판</h1></div><span class="status" id="status">마을 정비 중</span></div>
     <div class="battle-layout">
-      <section class="field panel" aria-label="전장">
+      <div class="main-column"><section class="field panel" aria-label="전장">
         <div id="arena" class="arena">
           <div class="scenery" aria-hidden="true"><div class="sun"></div><div class="orbit o1"></div><div class="orbit o2"></div><div class="mountain far"></div><div class="mountain near"></div><div class="floor"></div><div class="star s1"></div><div class="star s2"></div><div class="star s3"></div></div>
           <div class="arena-caption"><span class="badge" id="live">대기</span><span id="encounter"></span></div>
@@ -36,13 +30,24 @@
           <div id="effects" aria-hidden="true"></div>
           <div class="arenafoot"><div class="hit-history"><span>가한 피해 <b id="hit-dealt">—</b></span><span>받은 피해 <b id="hit-taken">—</b></span></div><span id="last-action"></span></div>
         </div>
+        <div class="reward-strip"><strong>획득 기록</strong><div id="field-rewards"></div></div>
         <div class="dock"><div><div class="dock-title"><h2>다음 차례 스킬 예약</h2><a class="tactics-link" href="#tactics">자동 전술 ↗</a></div><div class="inline" id="reservations"></div></div><div><div class="dock-title"><h2>포션</h2><small>턴 소모 없음</small></div><div class="inline" id="potions"></div></div></div>
         <div class="summarystrip"><span id="mp-count"></span><span id="interval"></span><span id="kills"></span><button class="link" data-open="skills">직업과 스킬 ↗</button></div>
       </section>
-      <aside class="side">
+      <section class="panel recent-panel" aria-label="최근 획득 장비">
+        <div class="panelhead"><h2>최근 획득 장비</h2><a class="link" href="#inventory">가방 열기 ↗</a></div>
+        <div class="recent-grid" id="recent-items"></div>
+      </section></div>
+      <aside class="side"><div id="profile-home"><section class="panel profile-card" id="profile-card" aria-label="캐릭터 정보와 재화">
+  <div class="profile-head"><button class="identity" data-open="stats" aria-label="캐릭터 스탯 상세"><i class="crest"></i><span><small id="class-name"></small><b id="name"></b></span><span class="lvl">Lv.<strong id="level"></strong></span></button>
+  </div><div class="xpblock"><div class="spread"><small>EXP</small><small id="xp"></small></div><div class="bar mp"><i id="xp-bar"></i></div></div>
+  <div id="overview" aria-label="주요 능력치"></div>
+  <button class="points" id="points" data-open="stats"></button>
+  <div class="wallet" aria-label="보유 재화"><button data-money="gold" aria-label="골드"><i class="coin"></i><b id="gold">0</b></button><button data-money="stone" aria-label="강화석"><i class="ore"></i><b id="stone">0</b></button><button data-money="chaos" aria-label="혼돈 파편"><i class="shard"></i><b id="chaos">0</b></button></div>
+</section></div>
         <section class="panel journey"><div class="panelhead"><h2>탐험 경로</h2><span class="compass" aria-hidden="true">✧</span></div><div class="pad">
-          <div class="route"><i aria-hidden="true">◇</i><div><b>윈드해븐</b><small>변두리 들판 | 권장 Lv.5</small></div></div>
-          <label for="depth">탐험 깊이</label><select id="depth"></select>
+          <div class="route"><i aria-hidden="true">◇</i><div><b>윈드해븐</b><small>변두리 들판 | 권장 Lv.1</small></div></div>
+          <label for="depth">탐험 깊이 | 난이도</label><select id="depth"></select>
           <div class="spread minor"><span>감시자 도전 조건</span><b id="progress"></b></div><div class="bar"><i id="progress-bar"></i></div>
           <div class="route-actions"><button id="start" class="primary">탐험 시작 →</button><button id="boss">감시자 도전</button></div><small id="boss-count"></small>
         </div></section>
@@ -52,10 +57,16 @@
   </section>
   <section id="inventory-page" class="page" hidden>
     <div class="heading"><div><small class="eyebrow">EQUIPMENT</small><h1 tabindex="-1">인벤토리</h1></div><a class="back" href="#battle">← 전장</a></div>
-    <section class="panel bag"><div class="bag-head"><div class="bag-tabs"><button id="bag-tab" class="tab">가방</button><button id="gear-tab" class="tab">장착 장비</button></div><span id="bag-count"></span></div>
-      <div class="bagtools"><div class="categories" aria-label="장비 분류"><button data-category="">전체</button><button data-category="weapon">무기</button><button data-category="armor">갑옷</button><button data-category="necklace">목걸이</button></div><select id="sort" aria-label="장비 정렬"><option value="recent">최근 획득</option><option value="rarity">등급순</option><option value="level">레벨순</option></select></div>
+    <div class="inventory-layout">
+      <section class="panel loadout"><div class="panelhead"><h2>장착 장비</h2><span id="equipped-count"></span></div>
+        <div class="paperdoll" id="equipped"></div>
+        <div class="panelhead"><h2>캐릭터 능력치</h2><button class="link" data-open="stats">스탯 분배 ↗</button></div>
+        <div class="loadout-stats" id="loadout-stats"></div>
+      </section>
+      <section class="panel bag"><div class="bag-head"><h2>가방</h2><span id="bag-count"></span></div>
+      <div class="bagtools"><div class="categories" aria-label="장비 분류"><button data-category="">전체</button><button data-category="weapon">무기</button><button data-category="armor">방어구</button><button data-category="accessory">장신구</button></div><select id="sort" aria-label="장비 정렬"><option value="recent">최근 획득</option><option value="rarity">등급순</option><option value="level">레벨순</option></select></div>
       <p id="overflow" hidden></p><small id="item-status"></small><div id="items" class="slots"></div>
-    </section>
+    </section></div>
   </section>
   <section id="tactics-page" class="page" hidden>
     <div class="heading"><div><small class="eyebrow">TACTICS</small><h1 tabindex="-1">자동 전술</h1></div><a class="back" href="#battle">← 전장</a></div>

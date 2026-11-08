@@ -33,3 +33,76 @@ test('simultaneous hits identify each attacker, recipient and player skill for t
   assert.equal(hits[0].skill, '가르기');
   assert.ok(hits.every(hit => hit.amount > 0));
 });
+
+test('old saves move three equipped pieces into nine slots and reconstruct only owned recent drops', () => {
+  const old=g.createGame(4);
+  const drop=g.generateItem(old);
+  old.inventory.push(drop);
+  old.equipment={weapon:old.equipment.weapon,armor:null,necklace:null};
+  old.version=1;delete old.recent;delete old.combat.mpCarry;
+  old.combat.hp=135.4;old.combat.mp=13.25;
+  const restored=parse(JSON.stringify(old));
+  assert.equal(restored.version,2);
+  assert.equal(Object.keys(restored.equipment).length,9);
+  assert.equal(restored.equipment.weapon.id,'item-1');
+  assert.deepEqual(restored.recent,[drop]);
+  assert.equal(restored.combat.hp,136);
+  assert.equal(restored.combat.mp,13);
+  assert.equal(restored.combat.mpCarry,.25);
+  assert.deepEqual(parse(JSON.stringify(restored)),restored);
+});
+
+test('monster level caps equipment requirements for normal and boss loot', () => {
+  const state=g.createGame(2);
+  for(const level of [1,4,6,11,16])for(const boss of [true,false]){
+    for(let roll=0;roll<100;roll++)assert.ok(g.generateItem(state,boss,level).level<=level);
+  }
+});
+
+test('two rings use separate slots and their integer attributes affect combat', () => {
+  const state=g.createGame(8);
+  const makeRing=()=>({...g.generateItem(state),template:'ring',rarity:0,level:1});
+  const first=makeRing(),second=makeRing(),third=makeRing();
+  state.inventory.push(first,second,third);
+  for(const ring of [first,second])assert.equal(g.equip(state,ring.id),undefined);
+  assert.equal(state.equipment.ring1.id,first.id);
+  assert.equal(state.equipment.ring2.id,second.id);
+  const stats=g.summary(state);
+  assert.deepEqual(stats.primary.int,{invested:0,gear:4,other:0,total:4});
+  assert.equal(stats.total.magic,stats.base.magic+4);
+  g.equip(state,third.id,'ring2');
+  assert.equal(state.equipment.ring2.id,third.id);
+  assert.ok(state.inventory.some(i=>i.id===second.id));
+  validate(state);
+});
+
+test('recent eight rewards stay in acquisition order after a sale and reload', () => {
+  const s=g.createGame(83);
+  s.progress.wins[0]=10;
+  const ids=[];
+  for(let n=0;n<10;n++){
+    g.enter(s,0,true);s.combat.enemies[0].hp=1;s.combat.gauge=100;
+    const drop=g.tick(s).find(event=>event.type==='drop');
+    ids.unshift(drop.item.id);
+  }
+  assert.deepEqual(s.recent.map(i=>i.id),ids.slice(0,8));
+  g.sell(s,ids[0]);
+  assert.deepEqual(parse(JSON.stringify(s)).recent.map(i=>i.id),ids.slice(0,8));
+});
+
+test('integer gear, primary and derived totals match the breakdown shown for battle', () => {
+  const state=trained();
+  g.retreat(state);
+  for(const k of ['str','dex','int','vit','spr'])g.allocate(state,k);
+  const boots={...g.generateItem(state),template:'boots',level:5,rarity:2};
+  state.inventory.push(boots);g.equip(state,boots.id);
+  state.combat.buffs.shout=state.combat.time+5;
+  const stats=g.summary(state);
+  for(const n of Object.values(g.itemStats(boots)))assert.ok(Number.isInteger(n));
+  for(const k of Object.keys(stats.total)){
+    for(const bucket of ['base','invested','gear','skills','total'])assert.ok(Number.isInteger(stats[bucket][k]));
+    assert.equal(stats.total[k],stats.base[k]+stats.invested[k]+stats.gear[k]+stats.skills[k]);
+  }
+  g.enter(state);state.combat.mp=0;
+  for(let i=0;i<30;i++){g.tick(state);assert.ok(Number.isInteger(state.combat.mp));assert.ok(Number.isInteger(state.combat.hp));}
+});

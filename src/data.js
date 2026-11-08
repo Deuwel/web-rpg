@@ -1,18 +1,28 @@
 export const RULES = {maxLevel:20, capacity:60, bossWins:10, step:0.05, dropRate:0.28, stoneRate:0.06, chaosRate:0.002, bossChaosRate:0.15};
 export const STATS = {
-  str:['힘','물리 공격 +1 | 방어 +0.1'], dex:['민첩','속도 +0.3 | 치명타 +0.03%p'],
-  int:['지능','마법 공격 +1 | MP +2'], vit:['체력','HP +8 | 방어 +0.25 | 저항 +0.15'],
-  spr:['정신','MP +4 | 저항 +0.25 | 초당 MP 회복 +0.05']
+  str:['힘','물리 공격 +1 | 힘 10당 방어 +1'], dex:['민첩','민첩 10당 속도 +3 | 100당 치명타 +3%p'],
+  int:['지능','마법 공격 +1 | MP +2'], vit:['체력','HP +8 | 체력 4당 방어 +1 | 20당 저항 +3'],
+  spr:['정신','MP +4 | 정신 4당 저항 +1 | 20당 초당 MP 회복 +1']
 };
 export const LABELS = {hp:'최대 HP',mp:'최대 MP',attack:'물리 공격',magic:'마법 공격',defense:'물리 방어',resist:'마법 저항',speed:'속도',crit:'치명타 확률(%)',regen:'MP 회복/초',gauge:'게이지 최대량'};
 export const GRADES = ['일반','고급','희귀'];
-export const SLOT_NAMES={weapon:'무기',armor:'갑옷',necklace:'목걸이'};
+export const SLOT_NAMES={helm:'투구',armor:'갑옷',pants:'바지',boots:'신발',weapon:'무기',offhand:'보조무기',ring1:'반지 1',ring2:'반지 2',necklace:'목걸이'};
+export const CATEGORIES={weapon:'무기',armor:'방어구',accessory:'장신구'};
+export function itemCategory(slot){
+  if(['ring1','ring2','necklace'].includes(slot))return 'accessory';
+  return ['weapon','offhand'].includes(slot)?'weapon':'armor';
+}
 export const ITEMS = {
   sword:{name:'척후자의 검',slot:'weapon',type:'한손검',stats:{attack:9}},
   axe:{name:'개척자의 장검',slot:'weapon',type:'한손검',stats:{attack:12,speed:-3}},
   heavy:{name:'수호자의 흉갑',slot:'armor',type:'중갑',stats:{hp:55,defense:8,speed:-6}},
   light:{name:'길잡이 가죽옷',slot:'armor',type:'경갑',stats:{hp:30,defense:5,attack:3}},
   cloth:{name:'별빛 로브',slot:'armor',type:'천',stats:{hp:15,defense:2,mp:25,magic:6}},
+  helm:{name:'파수꾼의 투구',slot:'helm',type:'투구',stats:{defense:3,vit:2}},
+  pants:{name:'척후자의 각반',slot:'pants',type:'바지',stats:{defense:3,hp:12}},
+  boots:{name:'바람길 장화',slot:'boots',type:'신발',stats:{speed:3,dex:2}},
+  shield:{name:'개척자의 방패',slot:'offhand',type:'방패',stats:{defense:4,str:2}},
+  ring:{name:'별빛 인장',slot:'ring1',type:'반지',stats:{int:2,spr:2}},
   charm:{name:'순환의 목걸이',slot:'necklace',type:'목걸이',stats:{mp:10,gauge:-8}}
 };
 export const SKILLS = {

@@ -749,7 +749,7 @@ nav [aria-current] {
   line-height:1;
   text-align:center;
   transform:translate(-50%,-95%);
-  animation:damage 1.95s both;
+  animation:damage 1.05s ease-out both;
   color:#dcfff1;
   filter:drop-shadow(0 2px 2px #172329);
   min-width:48px;
@@ -762,7 +762,7 @@ nav [aria-current] {
   text-shadow:0 1px 2px #142638;
 }
 .hit b {
-  font:900 clamp(29px,3vw,45px)/1 system-ui;
+  font:900 clamp(23px,2.4vw,34px)/1 system-ui;
   letter-spacing:-.065em;
   paint-order:stroke fill;
   -webkit-text-stroke:3px #26333e;
@@ -772,13 +772,13 @@ nav [aria-current] {
 }
 .hit.critical {
   color:#ffe483;
-  animation-duration:2.35s;
+  animation-duration:1.3s;
 }
 .hit.critical b {
-  font-size:clamp(39px,4.2vw,58px);
+  font-size:clamp(29px,3vw,43px);
 }
 .hit.still {
-  animation:none;
+  animation-name:damage-opacity;
 }
 .burst {
   position:absolute;
@@ -800,14 +800,14 @@ nav [aria-current] {
     opacity:1;
     scale:1.16;
   }
-  18%,72% {
+  18%,31% {
     opacity:1;
     scale:1;
     translate:0 -9px;
   }
   100% {
     opacity:0;
-    translate:0 -34px;
+    translate:0 -22px;
   }
 }
 @keyframes burst {
@@ -1646,4 +1646,96 @@ footer {
   .hit-history b {
     font-size:12px;
   }
+}
+
+@keyframes damage-opacity {
+  0%,32% { opacity:1 }
+  100% { opacity:0 }
+}
+
+.main-column { display:grid; gap:14px; min-width:0 }
+.profile-card {
+  padding:16px 18px 0;
+  background:radial-gradient(at 0 0,#3a5a69,transparent 65%),linear-gradient(135deg,#2c3e57,#243048);
+}
+.profile-head { display:flex; align-items:center; justify-content:space-between }
+.profile-card .identity { max-width:100%; gap:12px; width:100%; text-align:left }
+.profile-card .identity b { font-size:19px; max-width:16ch }
+.profile-card .lvl { margin-left:auto }
+.profile-card .xpblock { display:block; width:100%; margin:9px 0 }
+.profile-card #overview { display:flex; justify-content:space-between; gap:8px; border:0; padding:0 }
+.profile-card #overview span { display:flex; gap:5px; align-items:center }
+.profile-card .points { display:block; min-height:34px; padding:0; color:var(--mint) }
+.profile-card .wallet { justify-content:space-around; margin:3px -18px 0; border-top:1px solid #8395aa42; background:#182a3f77 }
+.profile-card .wallet b { max-width:8ch }
+.page>.profile-card { display:flex; align-items:center; gap:20px; padding:7px 14px; margin-bottom:12px; flex-wrap:wrap }
+.page>.profile-card .xpblock { max-width:105px }
+.page>.profile-card #overview { flex:1 }
+.page>.profile-card .wallet { margin:0; padding-left:8px; background:none; border:0 }
+.reward-strip { display:flex; gap:12px; align-items:center; padding:8px 16px; background:#1d3044; border-bottom:1px solid var(--line); min-height:38px }
+.reward-strip strong { color:var(--gold); font-size:11px; white-space:nowrap }
+#field-rewards { display:flex; gap:12px; min-width:0; overflow:hidden; font-size:11px }
+#field-rewards span { white-space:nowrap }
+#field-rewards .kill { color:#f2dab2 }
+.recent-grid { padding:12px; display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:5px }
+.recent-grid>.tile,.recent-grid>.empty-slot { min-height:83px }
+.recent-grid .tile b { font-size:10px }
+.recent-grid .tile small { display:none }
+.recent-grid .item-art { width:36px; height:38px }
+.inventory-layout { display:grid; grid-template-columns:minmax(300px,.85fr) minmax(0,1.65fr); gap:16px; align-items:start }
+.paperdoll { display:grid; padding:12px; gap:5px 10px; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-areas:"helm core necklace" "armor core ring1" "pants core ring2" "boots weapon offhand"; background:radial-gradient(ellipse at 50% 42%,#3f5767 0,#23334c 57%,#1e2c44) }
+.doll-core { grid-area:core; display:grid; place-items:center; position:relative }
+.doll-core:before { content:''; position:absolute; width:90%; aspect-ratio:1; border:1px dashed #99ddcc77; border-radius:50% }
+.wear-slot[data-slot-name=helm]{grid-area:helm}.wear-slot[data-slot-name=armor]{grid-area:armor}.wear-slot[data-slot-name=pants]{grid-area:pants}.wear-slot[data-slot-name=boots]{grid-area:boots}.wear-slot[data-slot-name=weapon]{grid-area:weapon}.wear-slot[data-slot-name=offhand]{grid-area:offhand}.wear-slot[data-slot-name=ring1]{grid-area:ring1}.wear-slot[data-slot-name=ring2]{grid-area:ring2}.wear-slot[data-slot-name=necklace]{grid-area:necklace}
+.wear-slot { min-width:0; text-align:center }
+.wear-slot>small { display:block; color:#cad9e5; font-size:10px; margin-bottom:2px }
+.wear-slot .tile,.wear-empty { min-height:48px; width:100%; border-radius:6px }
+.wear-slot .tile { display:flex; align-items:center; justify-content:center; padding:3px }
+.wear-slot .tile b,.wear-slot .tile small,.wear-slot .tile-meta { display:none }
+.wear-slot .item-art { width:39px; height:39px }
+.wear-empty { display:grid; place-items:center; border:1px dashed #526780; background:#192b3f66 }
+.wear-empty .item-art { opacity:.18; filter:grayscale(1) }
+.loadout-stats { display:grid; grid-template-columns:1fr 1fr; gap:7px 15px; padding:12px 16px }
+.loadout-stats span { display:flex; justify-content:space-between; align-items:center; gap:6px; font-size:12px; color:var(--muted) }
+.loadout-stats b { font:700 14px monospace; color:var(--text) }
+.sources { font:13px monospace }.sources em { font-style:normal }
+.item-art.helm i,.item-art.pants i,.item-art.boots i,.item-art.shield i,.item-art.ring i { inset:8% 12%; background:linear-gradient(120deg,#d4f2ef 0%,#8baabc 47%,#627d9d 48%,#4e637f) }
+.helm i {clip-path:polygon(10% 63%,14% 29%,35% 10%,68% 7%,88% 31%,95% 88%,72% 78%,73% 51%,54% 60%,50% 84%,39% 60%,23% 54%,28% 95%,9% 84%)}
+.pants i {clip-path:polygon(8% 4%,92% 4%,83% 94%,56% 96%,52% 48%,44% 51%,40% 96%,12% 92%)}
+.boots i {clip-path:polygon(18% 5%,68% 5%,64% 59%,91% 74%,95% 88%,76% 95%,8% 89%,15% 62%)}
+.shield i {clip-path:polygon(50% 0,94% 15%,88% 65%,68% 87%,50% 100%,26% 84%,12% 60%,7% 15%)}
+.item-art.ring i { inset:18%; border:5px solid #e6c075; border-radius:50%; background:transparent }
+.ring em { inset:8% 35% 61%; background:linear-gradient(135deg,#d3eaff,#9a90db); transform:rotate(45deg) }
+.grade0 { --aura:#d7e5fe77 }.grade1 { --aura:#66ffd7ae }.grade2 { --aura:#81a5ffdf }
+.tile,.artframe,.drop-token { isolation:isolate }
+.tile:before,.artframe:before,.drop-token:before {
+  content:''; position:absolute; z-index:-1; pointer-events:none; inset:5% 9%;
+  background:radial-gradient(ellipse,var(--aura) 0%,transparent 66%); border-radius:50%;
+}
+.artframe {position:relative}
+.drop-token { position:fixed; display:grid; place-items:center; width:38px; height:38px; pointer-events:none; z-index:7; border-radius:8px; background:#24364d; border:1px solid var(--grade); box-shadow:0 0 15px var(--aura) }
+.drop-token .item-art { width:32px; height:32px }
+@media(max-width:860px) {
+  .battle-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(205px,.53fr) }
+  .side { grid-template-columns:1fr }
+  .recent-grid { grid-template-columns:repeat(4,minmax(0,1fr)) }
+  .inventory-layout { grid-template-columns:minmax(225px,.8fr) minmax(0,1.3fr); gap:9px }
+  .slots {grid-template-columns:repeat(auto-fill,minmax(85px,1fr))}
+}
+@media(max-width:600px) {
+  .battle-layout {display:flex;flex-direction:column}
+  .main-column,.side {display:contents}
+  .battle-layout #profile-home,.battle-layout .field,.battle-layout .recent-panel,.battle-layout .journey,.battle-layout .record {width:100%}
+  #profile-home {order:0}.battle-layout .field{order:1}.recent-panel{order:2}.journey{order:3}.record{order:4}
+  .profile-card,.page>.profile-card {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 10px;padding:6px 12px}
+  .profile-card .profile-head {grid-column:1}.profile-card .identity {gap:5px}.profile-card .identity b {font-size:14px;max-width:8ch}
+  .profile-card .xpblock,.profile-card #overview {display:none}
+  .profile-card .wallet,.page>.profile-card .wallet {grid-row:1;grid-column:2;gap:0;margin:0;border:0;background:none;padding:0}
+  .profile-card .wallet b {max-width:4ch}.profile-card .points {grid-column:1/-1;text-align:left;min-height:25px}
+  .inventory-layout {grid-template-columns:minmax(0,1fr)}
+  .paperdoll {grid-template-columns:repeat(6,minmax(0,1fr));grid-template-areas:"helm armor pants boots core core" "weapon offhand ring1 ring2 necklace .";gap:5px}
+  .doll-core .hero-shape {width:26px;height:26px}
+  .loadout-stats {grid-template-columns:1fr 1fr;gap:3px 12px}
+  .recent-grid {grid-template-columns:repeat(4,minmax(0,1fr));padding:8px}
+  .reward-strip {padding:6px 9px}.slots{grid-template-columns:repeat(3,minmax(0,1fr))}
 }

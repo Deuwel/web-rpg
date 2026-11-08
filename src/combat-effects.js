@@ -22,8 +22,8 @@ export function showHits(events, arena, player, effects, simplified) {
     animate(sprite.querySelector('i'),[{translate:'0',filter:'brightness(2.1)'},{translate:direction*8+'px 0'},{translate:-direction*5+'px 2px'},{translate:'0'}],340);
     const lane=Number(target.dataset.hitLane||0);
     target.dataset.hitLane=String((lane+1)%3);
-    const x=Math.max(45,Math.min(box.width-45,r.left-box.left+r.width/2+(lane-1)*26));
-    const y=Math.max(50,Math.min(box.height-38,r.top-box.top+r.height/2-12+(lane%2)*24));
+    const x=Math.max(45,Math.min(box.width-45,r.left-box.left+r.width/2+(incoming?-1:1)*(r.width/2+6)+(lane-1)*10));
+    const y=Math.max(50,Math.min(box.height-38,r.top-box.top+13+(lane%2)*15));
     const label=document.createElement('div');
     label.className='hit '+(incoming?'incoming':'outgoing')+(hit.critical?' critical':'')+(reduced?' still':'');
     label.style.left=x+'px';label.style.top=y+'px';
@@ -36,6 +36,40 @@ export function showHits(events, arena, player, effects, simplified) {
       burst.style.left=(r.left-box.left+r.width/2)+'px';burst.style.top=(r.top-box.top+r.height/2)+'px';effects.append(burst);
       setTimeout(()=>burst.remove(),460);
     }
-    setTimeout(()=>label.remove(),hit.critical?2350:1950);
+    setTimeout(()=>label.remove(),hit.critical?1300:1050);
+  }
+}
+
+// Capture the defeated sprite before the wave renderer removes it.
+export function dropOrigins(events,arena){
+  const drops=[];
+  for(const event of events){
+    if(event.type!=='drop')continue;
+    const actor=arena.querySelector('[data-target="'+event.id+'"] .art');
+    if(actor)drops.push({item:event.item,from:actor.getBoundingClientRect()});
+  }
+  return drops;
+}
+export function flyDrops(drops,recent,icon,reduced){
+  if(reduced||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  for(const {item,from} of drops){
+    const target=recent.querySelector('[data-item="'+item.id+'"]');
+    if(!target)continue;
+    const to=target.getBoundingClientRect();
+    const x=from.left+from.width/2-19,y=from.top+from.height/2-19;
+    const dx=to.left+to.width/2-19-x,dy=to.top+to.height/2-19-y;
+    const token=document.createElement('div');
+    token.className='drop-token grade'+item.rarity;
+    token.setAttribute('aria-hidden','true');
+    token.innerHTML=icon(item.template);
+    token.style.left=x+'px';token.style.top=y+'px';document.body.append(token);
+    const anim=token.animate([
+      {transform:'translate(0,0) scale(.5)',opacity:0},
+      {transform:'translate(0,-22px) scale(1.18)',opacity:1,offset:.25},
+      {transform:'translate(0,4px) scale(1)',opacity:1,offset:.49},
+      {transform:'translate('+dx+'px,'+dy+'px) scale(.65)',opacity:.7}
+    ],{duration:920,easing:'ease-in-out'});
+    anim.onfinish=()=>{token.remove();if(target.isConnected)target.animate([{filter:'brightness(1.6)'},{filter:'brightness(1)'}],240);};
+    anim.oncancel=()=>token.remove();
   }
 }
